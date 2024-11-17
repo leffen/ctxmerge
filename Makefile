@@ -1,8 +1,9 @@
 # Variables
-APP_NAME := kubeconfig-tool
+APP_NAME := ctxmerge
 VERSION := $(shell git describe --tags --always --dirty)
 BUILD_DIR := build
 GITHUB_REPO := your-github-username/your-repo-name
+DOCKER_IMAGE := $(APP_NAME):$(VERSION)
 
 # Go build parameters
 GO := go
@@ -12,7 +13,7 @@ LD_FLAGS := -s -w -X 'main.version=$(VERSION)'
 
 # Default target
 .PHONY: all
-all: test build
+all: test build docker-build
 
 # Test
 .PHONY: test
@@ -44,43 +45,17 @@ build-windows:
 clean:
 	rm -rf $(BUILD_DIR)
 
+# Docker build
+.PHONY: docker-build
+buildd:
+	@echo "Building Docker image $(DOCKER_IMAGE)..."
+	docker build -t $(DOCKER_IMAGE) .
+
 # Create a release on GitHub
 .PHONY: release
-release: build
+release: build docker-build
 	@echo "Creating a release for version $(VERSION)..."
 	gh release create $(VERSION) \
 		--title "$(APP_NAME) $(VERSION)" \
 		--notes "Release of version $(VERSION)" \
 		$(BUILD_DIR)/* LICENSE
-
-# Include an MIT license
-.PHONY: license
-license:
-	@echo "Adding MIT License..."
-	@cat <<EOL > LICENSE
-MIT License
-
-Copyright (c) $(shell date +%Y) Your Name
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-EOL
-
-# Default license generation if missing
-LICENSE:
-	$(MAKE) license
